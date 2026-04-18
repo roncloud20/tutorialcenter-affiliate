@@ -8,31 +8,26 @@ Route::get('/', function () {
 })->middleware(['auth', 'verified'])->name('home');
 
 Route::middleware('guest')->group(function () {
+    // Registration Routes
     Route::get('/register', function () {
         return view('auth.register');
     })->name('register');
 
     Route::post('/register', [UserController::class, 'store'])->name('register.store');
+
+    // Login Routes
+    Route::get('/login', function () {
+        return view('auth.login');
+    })->name('login');
+
+    Route::post('/login', [UserController::class, 'login'])->name('login.store');
+
+    // Dashboard Route (for testing purposes, can be removed later)
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->middleware('auth')->name('dashboard');
 });
 
-// Route::get('/register', function () {
-//     return view('auth.register');
-// })->name('register');
-
-// Route::post('/register', [UserController::class, 'store'])->name('register');
-
-
-
-Route::get('/referral/check', [UserController::class, 'checkReferralCode'])->name('referral.check');
-
-// Route::post('/register', [UserController::class, 'registerUser'])->name('register.post');
-
-// Auth routes
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-
-Route::post('/login', [UserController::class, 'loginUser'])->name('login.post');
 
 Route::post('/logout', [UserController::class, 'logoutUser'])->name('logout');
 

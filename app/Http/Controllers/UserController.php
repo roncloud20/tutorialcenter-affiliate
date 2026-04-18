@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Mail\VerificationMail;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -222,28 +223,32 @@ class UserController extends Controller
     /**
      * Handle user login.
      */
-    public function loginUser(Request $request)
+    public function login(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-                'password' => 'required',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
 
-            if (\Illuminate\Support\Facades\Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-                $request->session()->regenerate();
-
-                if (!auth()->user()->hasVerifiedEmail()) {
-                    return redirect('/email/verify')->with('warning', 'Please verify your email before continuing.');
-                }
-
-                return redirect('/')->with('success', 'Login successful!');
-            }
-
-            return back()->withErrors(['email' => 'Invalid credentials.']);
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Login failed: ' . $e->getMessage()]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
+
+        if (!Auth::attempt($request->only('email', 'password'), $request->remember)) {
+            return response()->json([
+                'message' => 'Invalid login credentials',
+            ], 401);
+        }
+
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => 'Login successful',
+            'redirect' => route('dashboard'),
+        ]);
     }
 
     /**
