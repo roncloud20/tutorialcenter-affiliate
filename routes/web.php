@@ -7,11 +7,19 @@ Route::get('/', function () {
     return view('welcome');
 })->middleware(['auth', 'verified'])->name('home');
 
-Route::get('/register', function () {
-    return view('auth.register');
-})->name('register');
+Route::middleware('guest')->group(function () {
+    Route::get('/register', function () {
+        return view('auth.register');
+    })->name('register');
 
-Route::post('/register', [UserController::class, 'store'])->name('register');
+    Route::post('/register', [UserController::class, 'store'])->name('register.store');
+});
+
+// Route::get('/register', function () {
+//     return view('auth.register');
+// })->name('register');
+
+// Route::post('/register', [UserController::class, 'store'])->name('register');
 
 
 
