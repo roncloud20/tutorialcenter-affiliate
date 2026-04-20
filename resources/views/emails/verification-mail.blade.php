@@ -63,6 +63,14 @@
                                 </tr>
                             </table>
 
+                            <p style="margin: 0 0 10px; font-size: 15px; line-height: 1.7; color: #333333;">
+                                Your verification token is:
+                            </p>
+
+                            <p style="margin: 0 0 20px; font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #0b3a67; background-color: #f5f5f5; padding: 12px; border-radius: 6px; text-align: center;">
+                                {{ $token }}
+                            </p>
+
                             <p style="margin: 0 0 10px; font-size: 13px; line-height: 1.7; color: #666666;">
                                 If the button above does not work, copy and paste this link into your browser:
                             </p>

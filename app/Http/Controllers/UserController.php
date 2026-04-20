@@ -32,7 +32,6 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request){
-
         $validator = Validator::make($request->all(), [
             'firstname' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
@@ -104,26 +103,152 @@ class UserController extends Controller
     public function verifyAccount($token){
         $verification = AccountVerification::where('token', $token)->first();
 
-        if (!$verification) {
-            return redirect()->route('login')->with('error', 'Invalid verification link.');
+        if (! $verification) {
+            return view('auth.account-verification')->with('error', 'Invalid verification link.');
         }
 
         if ($verification->expires_at && now()->gt($verification->expires_at)) {
-            return redirect()->route('login')->with('error', 'Verification link expired.');
+            return view('auth.account-verification')->with('error', 'This verification link has expired.');
         }
 
         $user = $verification->user;
 
         if ($user->email_verified_at) {
-            return redirect()->route('login')->with('success', 'Account already verified.');
+            return view('auth.account-verification')->with('success', 'Your account has already been verified.');
         }
 
         $user->update([
             'email_verified_at' => now(),
         ]);
 
-        return redirect()->route('login')->with('success', 'Account verified successfully.');
+        $verification->delete();
+
+        return view('auth.account-verification')->with('success', 'Your account has been verified successfully. You can now log in.');
     }
+
+    // Verification token method
+    public function verifyToken(Request $request){
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $verification = AccountVerification::where('token', $request->token)->first();
+
+        if (! $verification) {
+            return response()->json([
+                'message' => 'Invalid verification token.',
+            ], 404);
+        }
+
+        if ($verification->expires_at && now()->gt($verification->expires_at)) {
+            return response()->json([
+                'message' => 'This verification token has expired.',
+            ], 422);
+        }
+
+        $user = $verification->user;
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found for this verification token.',
+            ], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'message' => 'Account already verified.',
+                'redirect' => route('login'),
+            ], 200);
+        }
+
+        $user->email_verified_at = now();
+        $user->save();
+
+        $verification->delete();
+
+        return response()->json([
+            'message' => 'Account verified successfully.',
+            'redirect' => route('login'),
+        ], 200);
+    }
+
+    // Resend verification email method
+    public function resendVerification(Request $request){
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'message' => 'This account is already verified.',
+            ], 422);
+        }
+
+        AccountVerification::where('user_id', $user->id)->delete();
+
+        $verification = AccountVerification::create([
+            'user_id' => $user->id,
+            'token' => rand(100000, 999999),
+            'expires_at' => now()->addHours(24),
+        ]);
+
+        Mail::to($user->email)->send(new VerificationMail($user, $verification->token));
+
+        return response()->json([
+            'message' => 'A new verification token has been sent to your email.',
+        ], 200);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Update the specified resource in storage.

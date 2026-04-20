@@ -18,21 +18,16 @@ class VerificationMail extends Mailable implements ShouldQueue
     public string $token;
     public string $verificationUrl;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(User $user, string $token)
     {
         $this->user = $user;
         $this->token = $token;
-        $this->verificationUrl = route('verification.verify', [
+        $this->verificationUrl = route('verification.notice', [
+            'email' => $this->user->email,
             'token' => $this->token,
         ]);
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -40,9 +35,6 @@ class VerificationMail extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
@@ -50,15 +42,11 @@ class VerificationMail extends Mailable implements ShouldQueue
             with: [
                 'user' => $this->user,
                 'verificationUrl' => $this->verificationUrl,
+                'token' => $this->token,
             ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
