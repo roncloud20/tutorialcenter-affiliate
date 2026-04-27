@@ -253,8 +253,7 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, User $user)
-    {
+    public function update(Request $request, User $user){
         try {
             $request->validate([
                 'firstname' => 'sometimes|required|string|max:255',
@@ -297,8 +296,7 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
-    {
+    public function destroy(User $user){
         try {
             DB::beginTransaction();
 
@@ -316,8 +314,7 @@ class UserController extends Controller
     /**
      * Restore the specified resource from storage.
      */
-    public function restore($id)
-    {
+    public function restore($id){
         try {
             DB::beginTransaction();
 
@@ -334,60 +331,9 @@ class UserController extends Controller
     }
 
     /**
-     * Handle user registration.
-     */
-    public function registerUser(Request $request)
-    {
-        try {
-            $request->validate([
-                'firstname' => 'required|string|max:255',
-                'surname' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'referral_code' => 'required|string|max:255|unique:users',
-                'role' => 'required|string|in:affiliate,admin,user',
-                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'phone_number' => 'nullable|string|max:11|min:11|regex:/^\+?[0-9]{10,11}$/',
-            ]);
-
-            DB::beginTransaction();
-
-            $data = [
-                'firstname' => $request->firstname,
-                'surname' => $request->surname,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'referral_code' => $request->referral_code,
-                'role' => $request->role,
-                'phone_number' => $request->phone_number,
-            ];
-
-            if ($request->hasFile('profile_picture')) {
-                $data['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
-            }
-
-            $user = User::create($data);
-
-            // Send verification email
-            Mail::send(new VerificationMail($user));
-
-            DB::commit();
-
-            // Log the user in but redirect to verification notice
-            \Illuminate\Support\Facades\Auth::login($user);
-
-            return redirect('/email/verify')->with('success', 'Registration successful! Please check your email to verify your account.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to create user: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
      * Handle user login.
      */
-    public function login(Request $request)
-    {
+    public function login(Request $request){
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
@@ -417,8 +363,7 @@ class UserController extends Controller
     /**
      * Handle user logout.
      */
-    public function logoutUser(Request $request)
-    {
+    public function logoutUser(Request $request){
         try {
             \Illuminate\Support\Facades\Auth::logout();
             $request->session()->invalidate();

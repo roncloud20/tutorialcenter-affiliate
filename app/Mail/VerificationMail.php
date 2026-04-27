@@ -35,17 +35,28 @@ class VerificationMail extends Mailable implements ShouldQueue
         );
     }
 
-    public function content(): Content
-    {
-        return new Content(
-            view: 'emails.verification-mail',
-            with: [
-                'user' => $this->user,
-                'verificationUrl' => $this->verificationUrl,
-                'token' => $this->token,
-            ],
-        );
-    }
+
+public function content(): Content
+{
+    return new Content(
+        view: 'emails.verification-mail',
+        with: [
+            'user' => $this->user,
+            'verificationUrl' => url('/verify/' . $this->token),
+            'token' => $this->token
+        ],
+    );
+}
+    // public function content(): Content{
+    //     return new Content(
+    //         view: 'emails.verification-mail',
+    //         with: [
+    //             'user' => $this->user,
+    //             'verificationUrl' => $this->verificationUrl,
+    //             'token' => $this->token,
+    //         ],
+    //     );
+    // }
 
     public function attachments(): array
     {

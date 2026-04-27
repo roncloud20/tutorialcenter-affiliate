@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="shortcut icon" href="{{ asset('images/tc-icon.png') }}" type="image/x-icon"/>
+</head>
+
 <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
     @php
         $pageTitle = $title ?? 'TC Affiliates';
