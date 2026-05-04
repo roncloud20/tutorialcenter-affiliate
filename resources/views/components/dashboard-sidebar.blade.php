@@ -9,8 +9,8 @@
 
     <nav class="flex-1 space-y-2 px-5 py-7">
         @if(auth()->user()->role === 'admin')
-        <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-4 py-3 text-gray-200 transition hover:bg-white/10">
-            Admin
+        <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[#0b3a67] dark:text-white">
+            Admin Dashboard
         </a>
         @endif
 
