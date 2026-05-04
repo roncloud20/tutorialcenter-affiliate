@@ -8,6 +8,7 @@ use App\Models\Referral;
 use Illuminate\View\View;
 use App\Models\Withdrawal;
 use Illuminate\Support\Str;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use App\Mail\VerificationMail;
 use App\Models\AffiliateEarning;
@@ -312,7 +313,7 @@ class UserController extends Controller
 
         $user->update($validated);
         $user->bankAccounts()->update([
-            'account_name' => trim($validated['firstname'].' '.$validated['surname']),
+            'account_name' => trim($validated['firstname'] . ' ' . $validated['surname']),
         ]);
 
         return redirect()
@@ -337,7 +338,7 @@ class UserController extends Controller
 
         $user->bankAccounts()->create([
             'bank_name' => $validated['bank_name'],
-            'account_name' => trim($user->firstname.' '.$user->surname),
+            'account_name' => trim($user->firstname . ' ' . $user->surname),
             'account_number' => $validated['account_number'],
             'is_default' => $shouldBeDefault,
         ]);
@@ -386,7 +387,7 @@ class UserController extends Controller
             ]
         );
 
-        $resetUrl = route('password.reset', ['token' => $token]).'?email='.urlencode($request->email);
+        $resetUrl = route('password.reset', ['token' => $token]) . '?email=' . urlencode($request->email);
 
         Mail::raw("Click this link to reset your password: {$resetUrl}", function ($message) use ($request) {
             $message->to($request->email)
@@ -484,6 +485,253 @@ class UserController extends Controller
     }
 
     /**
+     * Display user's withdrawal history and available balance.
+     */
+    public function withdrawals()
+    {
+        $user = auth()->user();
+
+        $availableBalance = AffiliateEarning::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->sum('amount');
+
+        $pendingWithdrawals = Withdrawal::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        $approvedWithdrawals = Withdrawal::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->sum('amount');
+
+        $paidWithdrawals = Withdrawal::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->sum('amount');
+
+        $totalWithdrawn = Withdrawal::where('user_id', $user->id)
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('amount');
+
+        $totalRequestedWithdrawals = Withdrawal::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved', 'paid'])
+            ->sum('amount');
+
+        $withdrawableBalance = $availableBalance - $totalRequestedWithdrawals;
+
+        $withdrawals = Withdrawal::with('bankAccount')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->paginate(10);
+
+        $bankAccounts = BankAccount::where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return view('withdrawals.index', [
+            'user' => $user,
+            'availableBalance' => $availableBalance,
+            'pendingWithdrawals' => $pendingWithdrawals,
+            'approvedWithdrawals' => $approvedWithdrawals,
+            'paidWithdrawals' => $paidWithdrawals,
+            'totalWithdrawn' => $totalWithdrawn,
+            'withdrawableBalance' => max($withdrawableBalance, 0),
+            'withdrawals' => $withdrawals,
+            'bankAccounts' => $bankAccounts,
+        ]);
+    }
+    // public function withdrawals()
+    // {
+    //     $user = auth()->user();
+
+    //     $availableBalance = AffiliateEarning::where('user_id', $user->id)
+    //         ->where('status', 'approved')
+    //         ->sum('amount');
+
+    //     $totalWithdrawn = Withdrawal::where('user_id', $user->id)
+    //         ->whereIn('status', ['approved', 'paid'])
+    //         ->sum('amount');
+
+    //     $pendingWithdrawals = Withdrawal::where('user_id', $user->id)
+    //         ->where('status', 'pending')
+    //         ->sum('amount');
+
+    //     $withdrawals = Withdrawal::with('bankAccount')
+    //         ->where('user_id', $user->id)
+    //         ->latest()
+    //         ->paginate(10);
+
+    //     $bankAccounts = BankAccount::where('user_id', $user->id)
+    //         ->latest()
+    //         ->get();
+
+    //     return view('withdrawals.index', [
+    //         'user' => $user,
+    //         'availableBalance' => $availableBalance,
+    //         'totalWithdrawn' => $totalWithdrawn,
+    //         'pendingWithdrawals' => $pendingWithdrawals,
+    //         'withdrawals' => $withdrawals,
+    //         'bankAccounts' => $bankAccounts,
+    //     ]);
+    // }
+
+    /**
+     * Handle withdrawal request from user.
+     */
+
+    public function storeWithdrawal(Request $request)
+    {
+        $user = auth()->user();
+
+        // $availableBalance = AffiliateEarning::where('user_id', $user->id)
+        //     ->where('status', 'approved')
+        //     ->sum('amount');
+
+        // $pendingWithdrawals = Withdrawal::where('user_id', $user->id)
+        //     ->where('status', 'pending')
+        //     ->sum('amount');
+
+        // $withdrawableBalance = $availableBalance - $pendingWithdrawals;
+
+        $availableBalance = AffiliateEarning::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->sum('amount');
+
+        $totalRequestedWithdrawals = Withdrawal::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved', 'paid'])
+            ->sum('amount');
+
+        $withdrawableBalance = $availableBalance - $totalRequestedWithdrawals;
+
+        $validator = Validator::make($request->all(), [
+            'bank_account_id' => [
+                'required',
+                'exists:bank_accounts,id',
+            ],
+            'amount' => [
+                // 'required',
+                // 'numeric',
+                // 'min:100',
+                // 'max:' . $withdrawableBalance,
+                'required',
+                'numeric',
+                'min:100',
+                'max:' . max($withdrawableBalance, 0),
+            ],
+        ], [
+            'amount.max' => 'You cannot request more than your available balance of ₦' . number_format($withdrawableBalance, 2) . '.',
+            'amount.min' => 'The minimum withdrawal amount is ₦100.00.',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $bankAccount = BankAccount::where('id', $request->bank_account_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $bankAccount) {
+            return back()
+                ->withErrors(['bank_account_id' => 'Invalid bank account selected.'])
+                ->withInput();
+        }
+
+        Withdrawal::create([
+            'user_id' => $user->id,
+            'bank_account_id' => $bankAccount->id,
+            'amount' => $request->amount,
+            'status' => 'pending',
+            'payment_method' => 'bank_transfer',
+        ]);
+
+        return redirect()
+            ->route('withdrawals.index')
+            ->with('success', 'Withdrawal request submitted successfully.');
+    }
+    // public function storeWithdrawal(Request $request)
+    // {
+    //     $user = auth()->user();
+
+    //     $validator = Validator::make($request->all(), [
+    //         'amount' => 'required|numeric|min:100',
+    //         'bank_account_id' => 'required|exists:bank_accounts,id',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return back()
+    //             ->withErrors($validator)
+    //             ->withInput();
+    //     }
+
+    //     $bankAccount = BankAccount::where('id', $request->bank_account_id)
+    //         ->where('user_id', $user->id)
+    //         ->first();
+
+    //     if (! $bankAccount) {
+    //         return back()
+    //             ->withErrors(['bank_account_id' => 'Invalid bank account selected.'])
+    //             ->withInput();
+    //     }
+
+    //     $availableBalance = AffiliateEarning::where('user_id', $user->id)
+    //         ->where('status', 'approved')
+    //         ->sum('amount');
+
+    //     $pendingWithdrawals = Withdrawal::where('user_id', $user->id)
+    //         ->where('status', 'pending')
+    //         ->sum('amount');
+
+    //     $withdrawableBalance = $availableBalance - $pendingWithdrawals;
+
+    //     if ($request->amount > $withdrawableBalance) {
+    //         return back()
+    //             ->withErrors(['amount' => 'Insufficient withdrawable balance.'])
+    //             ->withInput();
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         Withdrawal::create([
+    //             'user_id' => $user->id,
+    //             'bank_account_id' => $bankAccount->id,
+    //             'amount' => $request->amount,
+    //             'status' => 'pending',
+    //             'payment_method' => 'bank_transfer',
+    //         ]);
+
+    //         DB::commit();
+
+    //         return redirect()
+    //             ->route('withdrawals.index')
+    //             ->with('success', 'Withdrawal request submitted successfully.');
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         return back()
+    //             ->withErrors(['amount' => 'Unable to submit withdrawal request. Please try again.'])
+    //             ->withInput();
+    //     }
+    // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, User $user)
@@ -492,9 +740,9 @@ class UserController extends Controller
             $request->validate([
                 'firstname' => 'sometimes|required|string|max:255',
                 'surname' => 'sometimes|required|string|max:255',
-                'email' => 'sometimes|required|string|email|max:255|unique:users,email,'.$user->id,
+                'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
                 'password' => 'sometimes|required|string|min:8',
-                'referral_code' => 'sometimes|required|string|max:255|unique:users,referral_code,'.$user->id,
+                'referral_code' => 'sometimes|required|string|max:255|unique:users,referral_code,' . $user->id,
                 'role' => 'sometimes|required|string|in:affiliate,admin,user',
                 'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'phone_number' => 'nullable|string|max:20',

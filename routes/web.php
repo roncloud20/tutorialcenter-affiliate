@@ -54,6 +54,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/bank-accounts', [UserController::class, 'storeBankAccount'])
         ->name('profile.bank-accounts.store');
 
+    Route::get('/withdrawals', [UserController::class, 'withdrawals'])
+        ->name('withdrawals.index');
+
+    Route::post('/withdrawals', [UserController::class, 'storeWithdrawal'])
+        ->name('withdrawals.store');
+
     Route::post('/logout', [UserController::class, 'logoutUser'])
         ->name('logout');
 });
@@ -80,6 +86,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/referrals', [AdminController::class, 'referrals'])->name('referrals.index');
 
     Route::get('/withdrawals', [AdminController::class, 'withdrawals'])->name('withdrawals.index');
+
+    Route::patch('/withdrawals/{withdrawal}/approve', [AdminController::class, 'approveWithdrawal'])
+        ->name('withdrawals.approve');
+
+    Route::patch('/withdrawals/{withdrawal}/reject', [AdminController::class, 'rejectWithdrawal'])
+        ->name('withdrawals.reject');
+
+    Route::patch('/withdrawals/{withdrawal}/mark-sent', [AdminController::class, 'markWithdrawalSent'])
+        ->name('withdrawals.sent');
 
     Route::get('/pending-affiliates', [AdminController::class, 'pendingAffiliates'])->name('affiliates.pending');
 

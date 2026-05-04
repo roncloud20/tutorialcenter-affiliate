@@ -24,7 +24,7 @@
     <div id="mobileDashboardMenu" class="hidden max-h-[calc(100vh-5rem)] overflow-y-auto pt-4">
         <nav class="space-y-2">
             @if(auth()->user()->role === 'admin')
-            <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[#0b3a67] dark:text-white">
+            <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-4 py-3 text-gray-200 transition hover:bg-white/10">
                 Admin Dashboard
             </a>
             @endif
@@ -40,7 +40,7 @@
                 Earnings
             </a>
 
-            <a href="#" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[#0b3a67] dark:text-white">
+            <a href="{{ route('withdrawals.index') }}" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[#0b3a67] dark:text-white">
                 Withdrawals
             </a>
 

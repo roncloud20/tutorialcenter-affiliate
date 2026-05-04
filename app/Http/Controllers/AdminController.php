@@ -135,4 +135,49 @@ class AdminController extends Controller
 
         return back()->with('success', 'Earning declined successfully.');
     }
+
+    public function approveWithdrawal(Withdrawal $withdrawal)
+    {
+        $this->authorizeAdmin();
+
+        if ($withdrawal->status !== 'pending') {
+            return back()->with('error', 'Only pending withdrawals can be approved.');
+        }
+
+        $withdrawal->update([
+            'status' => 'approved',
+        ]);
+
+        return back()->with('success', 'Withdrawal approved.');
+    }
+
+    public function rejectWithdrawal(Withdrawal $withdrawal)
+    {
+        $this->authorizeAdmin();
+
+        if ($withdrawal->status !== 'pending') {
+            return back()->with('error', 'Only pending withdrawals can be rejected.');
+        }
+
+        $withdrawal->update([
+            'status' => 'rejected',
+        ]);
+
+        return back()->with('success', 'Withdrawal rejected.');
+    }
+
+    public function markWithdrawalSent(Withdrawal $withdrawal)
+    {
+        $this->authorizeAdmin();
+
+        if ($withdrawal->status !== 'approved') {
+            return back()->with('error', 'Only approved withdrawals can be marked as sent.');
+        }
+
+        $withdrawal->update([
+            'status' => 'paid',
+        ]);
+
+        return back()->with('success', 'Withdrawal marked as sent.');
+    }
 }

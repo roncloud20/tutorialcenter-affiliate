@@ -19,11 +19,10 @@ class ReferralController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|string|max:255',
-            'contact' => 'required|string|max:255',
+            'contact' => 'required|string|max:255|unique:referrals,contact',
             'referral_code' => 'required|string|exists:users,referral_code',
 
             // Optional earning data from main platform
