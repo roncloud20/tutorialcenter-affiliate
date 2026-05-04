@@ -82,4 +82,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/withdrawals', [AdminController::class, 'withdrawals'])->name('withdrawals.index');
 
     Route::get('/pending-affiliates', [AdminController::class, 'pendingAffiliates'])->name('affiliates.pending');
+
+    Route::get('/earnings/pending', [AdminController::class, 'pendingEarnings'])
+        ->name('earnings.pending');
+
+    Route::patch('/earnings/{earning}/approve', [AdminController::class, 'approveEarning'])
+        ->name('earnings.approve');
+
+    Route::patch('/earnings/{earning}/decline', [AdminController::class, 'declineEarning'])
+        ->name('earnings.decline');
 });

@@ -568,11 +568,4 @@ class UserController extends Controller
             return response()->json(['error' => 'Failed to restore user', 'message' => $e->getMessage()], 500);
         }
     }
-
-    public function test()
-    {
-        $user = User::first();
-
-        return response()->json($user);
-    }
 }

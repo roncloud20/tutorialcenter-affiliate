@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Referral;
 use App\Models\Withdrawal;
-use Illuminate\Http\Request;
+use App\Models\AffiliateEarning;
 
 class AdminController extends Controller
 {
@@ -44,6 +44,19 @@ class AdminController extends Controller
                 ->latest()
                 ->take(10)
                 ->get(),
+
+            'pendingEarnings' => AffiliateEarning::with(['user', 'referral'])
+                ->where('status', 'pending')
+                ->latest()
+                ->take(5)
+                ->get(),
+
+            'pendingEarningsCount' => AffiliateEarning::where('status', 'pending')->count(),
+
+            // 'recentReferrals' => Referral::with('user')
+            //     ->latest()
+            //     ->take(10)
+            //     ->get(),
         ]);
     }
 
@@ -79,5 +92,47 @@ class AdminController extends Controller
                 ->latest()
                 ->paginate(20),
         ]);
+    }
+
+    public function pendingEarnings()
+    {
+        $this->authorizeAdmin();
+
+        return view('admin.earnings.pending', [
+            'earnings' => AffiliateEarning::with(['user', 'referral'])
+                ->where('status', 'pending')
+                ->latest()
+                ->paginate(20),
+        ]);
+    }
+
+    public function approveEarning(AffiliateEarning $earning)
+    {
+        $this->authorizeAdmin();
+
+        if ($earning->status !== 'pending') {
+            return back()->with('error', 'Only pending earnings can be approved.');
+        }
+
+        $earning->update([
+            'status' => 'approved',
+        ]);
+
+        return back()->with('success', 'Earning approved successfully.');
+    }
+
+    public function declineEarning(AffiliateEarning $earning)
+    {
+        $this->authorizeAdmin();
+
+        if ($earning->status !== 'pending') {
+            return back()->with('error', 'Only pending earnings can be declined.');
+        }
+
+        $earning->update([
+            'status' => 'declined',
+        ]);
+
+        return back()->with('success', 'Earning declined successfully.');
     }
 }
