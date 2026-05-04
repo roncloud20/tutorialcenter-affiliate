@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreBankAccountRequest;
-use App\Http\Requests\UpdateProfileRequest;
-use App\Mail\VerificationMail;
-use App\Models\AccountVerification;
-use App\Models\AffiliateEarning;
-use App\Models\Referral;
-use App\Models\User;
-use App\Models\Withdrawal;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
+use App\Models\User;
+use App\Models\Referral;
+use Illuminate\View\View;
+use App\Models\Withdrawal;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Mail\VerificationMail;
+use App\Models\AffiliateEarning;
 use Illuminate\Support\Facades\DB;
+use App\Models\AccountVerification;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\View\View;
+use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Requests\StoreBankAccountRequest;
 
 class UserController extends Controller
 {
